@@ -3,17 +3,20 @@ import { Link } from "react-router-dom";
 import { Search, Package } from "lucide-react";
 import ItemFormModal from "@/components/ItemFormModal";
 import { Button } from "@/components/ui/button";
+import nustBackground from "@/assets/nust-background.png";
 
 const Index = () => {
   const [modalType, setModalType] = useState<"found" | "lost" | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${nustBackground})` }}
+      />
+      {/* Overlay for better text readability */}
+      <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" />
 
       <div className="container max-w-6xl mx-auto relative z-10">
         {/* Header */}
