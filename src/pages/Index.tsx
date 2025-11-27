@@ -1,12 +1,115 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Package } from "lucide-react";
+import ItemFormModal from "@/components/ItemFormModal";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
+  const [modalType, setModalType] = useState<"found" | "lost" | null>(null);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
+
+      <div className="container max-w-6xl mx-auto relative z-10">
+        {/* Header */}
+        <div className="text-center mb-16 animate-fade-in">
+          <h1 className="text-5xl md:text-6xl font-bold text-primary mb-4 tracking-tight">
+            NUST Lost & Found
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            A community-driven platform to reunite people with their belongings
+          </p>
+        </div>
+
+        {/* Main action cards */}
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          {/* Found card */}
+          <div
+            onClick={() => setModalType("found")}
+            className="group cursor-pointer"
+          >
+            <div className="relative overflow-hidden rounded-3xl p-12 backdrop-blur-xl bg-gradient-to-br from-card/80 to-card/40 border border-border/50 shadow-2xl hover:shadow-accent/20 transition-all duration-500 hover:scale-[1.02] hover:border-accent/50">
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10">
+                <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Package className="w-10 h-10 text-accent" />
+                </div>
+                
+                <h2 className="text-3xl font-bold text-foreground mb-3">
+                  I Found Something
+                </h2>
+                <p className="text-muted-foreground text-lg mb-6">
+                  Help someone recover their lost item by reporting what you found
+                </p>
+                
+                <div className="inline-flex items-center text-accent font-medium group-hover:translate-x-2 transition-transform duration-300">
+                  Report found item
+                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lost card */}
+          <div
+            onClick={() => setModalType("lost")}
+            className="group cursor-pointer"
+          >
+            <div className="relative overflow-hidden rounded-3xl p-12 backdrop-blur-xl bg-gradient-to-br from-card/80 to-card/40 border border-border/50 shadow-2xl hover:shadow-primary/20 transition-all duration-500 hover:scale-[1.02] hover:border-primary/50">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10">
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Search className="w-10 h-10 text-primary" />
+                </div>
+                
+                <h2 className="text-3xl font-bold text-foreground mb-3">
+                  I Lost Something
+                </h2>
+                <p className="text-muted-foreground text-lg mb-6">
+                  Report your lost item and increase your chances of finding it
+                </p>
+                
+                <div className="inline-flex items-center text-primary font-medium group-hover:translate-x-2 transition-transform duration-300">
+                  Report lost item
+                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Browse links */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
+          <Link to="/found">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm bg-background/50 hover:bg-background/70">
+              Browse Found Items
+            </Button>
+          </Link>
+          <Link to="/lost">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm bg-background/50 hover:bg-background/70">
+              Browse Lost Items
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Modal */}
+      <ItemFormModal
+        isOpen={modalType !== null}
+        onClose={() => setModalType(null)}
+        type={modalType || "found"}
+      />
     </div>
   );
 };
