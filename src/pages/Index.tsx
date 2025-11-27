@@ -113,6 +113,7 @@ const Index = () => {
           <p className="mb-1">Created by</p>
           <div className="flex items-center justify-center gap-4">
             <a 
+               
               href="https://github.com/sa1ffffff" 
               target="_blank" 
               rel="noopener noreferrer"
@@ -122,6 +123,7 @@ const Index = () => {
             </a>
             <span>•</span>
             <a 
+              href="https://instagram.com/kaazmi_shujah"
               href="https://github.com/kaazmi12" 
               target="_blank" 
               rel="noopener noreferrer"
