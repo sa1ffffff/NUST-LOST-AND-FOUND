@@ -107,6 +107,32 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Footer */}
+      <div className="absolute bottom-4 left-0 right-0 z-10">
+        <div className="text-center text-sm text-foreground/70 backdrop-blur-sm bg-background/30 py-3 px-4 rounded-lg mx-auto max-w-md">
+          <p className="mb-1">Created by</p>
+          <div className="flex items-center justify-center gap-4">
+            <a 
+              href="https://github.com/sa1ffffff" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors duration-200"
+            >
+              @sa1ffffff
+            </a>
+            <span>•</span>
+            <a 
+              href="https://github.com/kaazmi12" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors duration-200"
+            >
+              @kaazmi12
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Modal */}
       <ItemFormModal
         isOpen={modalType !== null}
