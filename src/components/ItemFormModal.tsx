@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import MatchResults from "@/components/MatchResults";
 
 interface ItemFormModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
     isAnonymous: false,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [matches, setMatches] = useState<any[] | null>(null);
+  const [showMatches, setShowMatches] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +56,9 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
       }
 
       // Insert into appropriate table
+      let itemId = null;
       if (type === "found") {
-        const { error } = await supabase.from("found_items").insert({
+        const { data, error } = await supabase.from("found_items").insert({
           title: formData.title,
           location: formData.location,
           date_found: formData.date,
@@ -62,10 +66,11 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
-        });
+        }).select().single();
         if (error) throw error;
+        itemId = data.id;
       } else {
-        const { error } = await supabase.from("lost_items").insert({
+        const { data, error } = await supabase.from("lost_items").insert({
           title: formData.title,
           location: formData.location,
           date_lost: formData.date,
@@ -73,23 +78,47 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
-        });
+        }).select().single();
         if (error) throw error;
+        itemId = data.id;
       }
 
       toast.success(`${type === "found" ? "Found" : "Lost"} item reported successfully!`);
       
-      // Reset form
-      setFormData({
-        title: "",
-        location: "",
-        date: "",
-        contact: "",
-        description: "",
-        isAnonymous: false,
-      });
-      setImageFile(null);
-      onClose();
+      // For lost items, trigger AI matching
+      if (type === "lost" && itemId) {
+        try {
+          toast.info("🔍 Finding potential matches...");
+          
+          const { data: matchData, error: matchError } = await supabase.functions.invoke(
+            "match-items",
+            {
+              body: { lostItemId: itemId },
+            }
+          );
+
+          if (matchError) {
+            console.error("Error finding matches:", matchError);
+          } else if (matchData?.matches) {
+            setMatches(matchData.matches);
+            setShowMatches(true);
+          }
+        } catch (error) {
+          console.error("Error calling match function:", error);
+        }
+      } else {
+        // Reset and close for found items
+        setFormData({
+          title: "",
+          location: "",
+          date: "",
+          contact: "",
+          description: "",
+          isAnonymous: false,
+        });
+        setImageFile(null);
+        onClose();
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Failed to submit. Please try again.");
@@ -98,8 +127,29 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
     }
   };
 
+  const handleCloseMatches = () => {
+    setShowMatches(false);
+    setMatches(null);
+    // Reset form
+    setFormData({
+      title: "",
+      location: "",
+      date: "",
+      contact: "",
+      description: "",
+      isAnonymous: false,
+    });
+    setImageFile(null);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      {showMatches && matches && (
+        <MatchResults matches={matches} onClose={handleCloseMatches} />
+      )}
+      
+      <Dialog open={isOpen && !showMatches} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-card/95 border border-border/50">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary">
@@ -209,6 +259,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      item_matches: {
+        Row: {
+          created_at: string
+          found_item_id: string
+          id: string
+          lost_item_id: string
+          match_score: number
+        }
+        Insert: {
+          created_at?: string
+          found_item_id: string
+          id?: string
+          lost_item_id: string
+          match_score: number
+        }
+        Update: {
+          created_at?: string
+          found_item_id?: string
+          id?: string
+          lost_item_id?: string
+          match_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_found_item"
+            columns: ["found_item_id"]
+            isOneToOne: false
+            referencedRelation: "found_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_lost_item"
+            columns: ["lost_item_id"]
+            isOneToOne: false
+            referencedRelation: "lost_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lost_items: {
         Row: {
           contact: string | null
