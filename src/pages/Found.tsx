@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import UploadFoundModal from "./UploadFoundModal";
 
 interface FoundItem {
   id: string;
@@ -16,6 +17,7 @@ interface FoundItem {
   contact: string | null;
   image_url: string | null;
   is_anonymous: boolean;
+  status: "pending" | "approved";
   created_at: string;
 }
 
@@ -24,12 +26,14 @@ const Found = () => {
   const [filteredItems, setFilteredItems] = useState<FoundItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => {
     fetchFoundItems();
   }, []);
 
   const fetchFoundItems = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("found_items")
@@ -38,11 +42,10 @@ const Found = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const foundItems = data || [];
-      setItems(foundItems);
-      setFilteredItems(foundItems);
+      setItems(data || []);
+      setFilteredItems(data || []);
     } catch (error) {
-      console.error("Error fetching found items:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -53,39 +56,44 @@ const Found = () => {
       setFilteredItems(items);
       return;
     }
-
     const query = searchQuery.toLowerCase();
-    const filtered = items.filter(item => 
-      item.title.toLowerCase().includes(query) ||
-      item.description?.toLowerCase().includes(query) ||
-      item.location.toLowerCase().includes(query)
+    setFilteredItems(
+      items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(query) ||
+          item.description?.toLowerCase().includes(query) ||
+          item.location.toLowerCase().includes(query)
+      )
     );
-    setFilteredItems(filtered);
   }, [searchQuery, items]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
           <Link to="/">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
+            <Button variant="ghost">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold text-primary mb-2">Found Items</h1>
-          <p className="text-muted-foreground">Items that have been found by NUST community members</p>
-          
-          <div className="mt-6 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="Search by item name, description, or location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 backdrop-blur-sm bg-card/50"
-            />
-          </div>
+          <Button
+            variant="secondary"
+            onClick={() => setUploadOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> Report Found Item
+          </Button>
+        </div>
+
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input
+            type="text"
+            placeholder="Search by name, description, or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 backdrop-blur-sm bg-card/50"
+          />
         </div>
 
         {loading ? (
@@ -95,13 +103,18 @@ const Found = () => {
         ) : filteredItems.length === 0 ? (
           <Card className="p-12 text-center backdrop-blur-sm bg-card/50">
             <p className="text-muted-foreground">
-              {searchQuery ? "No items match your search" : "No found items yet. Be the first to report one!"}
+              {searchQuery
+                ? "No items match your search"
+                : "No found items yet. Be the first to report one!"}
             </p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden backdrop-blur-sm bg-card/50 border-border/50 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <Card
+                key={item.id}
+                className="overflow-hidden backdrop-blur-sm bg-card/50 border-border/50 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              >
                 {item.image_url && (
                   <div className="aspect-video overflow-hidden bg-muted">
                     <img
@@ -112,9 +125,13 @@ const Found = () => {
                   </div>
                 )}
                 <div className="p-6">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
+                    {item.title}
+                  </h3>
                   {item.description && (
-                    <p className="text-muted-foreground mb-4 line-clamp-3">{item.description}</p>
+                    <p className="text-muted-foreground mb-4 line-clamp-3">
+                      {item.description}
+                    </p>
                   )}
                   <div className="space-y-2 text-sm">
                     <p className="text-foreground">
@@ -139,6 +156,8 @@ const Found = () => {
           </div>
         )}
       </div>
+
+      {uploadOpen && <UploadFoundModal onClose={() => setUploadOpen(false)} onSuccess={fetchFoundItems} />}
     </div>
   );
 };
