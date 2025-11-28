@@ -68,36 +68,40 @@ const handler = async (req: Request): Promise<Response> => {
           await resend.emails.send({
             from: "NUST Lost & Found <onboarding@resend.dev>",
             to: [lostItem.contact],
-            subject: "Your Lost Item Might Have Been Found!",
+            subject: "We Might Have Found Your Lost Item",
             html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h1 style="color: #333; border-bottom: 2px solid #4F46E5; padding-bottom: 10px;">
-                  Great News! We Found a Match
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333; margin-bottom: 20px;">
+                  Hi ${lostItem.contact ? lostItem.contact.split('@')[0] : 'there'},
                 </h1>
                 
-                <p style="font-size: 16px; color: #555;">
-                  Hello! We found an item that might match what you're looking for.
+                <p style="font-size: 16px; color: #555; line-height: 1.6;">
+                  Good news! Someone just submitted a found item on our platform, and it looks like it might match the item you reported as lost.
                 </p>
                 
-                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <h2 style="color: #4F46E5; margin-top: 0;">Your Lost Item:</h2>
-                  <p><strong>Item:</strong> ${lostItem.title}</p>
-                  <p><strong>Location Lost:</strong> ${lostItem.location}</p>
+                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4F46E5;">
+                  <h2 style="color: #4F46E5; margin-top: 0; font-size: 18px;">Here's what our system detected:</h2>
                   
-                  <h2 style="color: #10B981; margin-top: 20px;">Potential Match Found:</h2>
-                  <p><strong>Item:</strong> ${foundItem.title}</p>
-                  <p><strong>Location Found:</strong> ${foundItem.location}</p>
-                  <p><strong>Match Score:</strong> ${match.match_score}%</p>
-                  ${foundItem.description ? `<p><strong>Description:</strong> ${foundItem.description}</p>` : ""}
+                  <p style="margin: 10px 0;"><strong>Possible Match:</strong> ${foundItem.title}</p>
+                  <p style="margin: 10px 0;"><strong>Location Found:</strong> ${foundItem.location}</p>
+                  ${foundItem.description ? `<p style="margin: 10px 0;"><strong>Description:</strong> ${foundItem.description}</p>` : ""}
+                  <p style="margin: 10px 0;"><strong>Match Confidence:</strong> ${match.match_score}%</p>
                 </div>
                 
-                <p style="font-size: 16px; color: #555;">
-                  Please visit the NUST Lost & Found platform to view more details and contact information.
+                <p style="font-size: 16px; color: #555; line-height: 1.6;">
+                  Please log in to the platform and verify if this is your item.
                 </p>
                 
-                <p style="font-size: 14px; color: #888; margin-top: 30px;">
-                  This is an automated notification from NUST Lost & Found system.
+                <p style="font-size: 16px; color: #555; line-height: 1.6;">
+                  If it's a match, you can contact the person who found it directly and arrange handover.
                 </p>
+                
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                  <p style="font-size: 14px; color: #888;">
+                    Wishing you the best,<br>
+                    <strong>NUST Lost & Found Team</strong>
+                  </p>
+                </div>
               </div>
             `,
           });

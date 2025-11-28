@@ -89,40 +89,44 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
         toast.info("Your item is pending admin approval and will be visible once approved.");
       }
       
-      // For lost items, trigger AI matching
-      if (type === "lost" && itemId) {
+      // Trigger AI matching for both lost and found items
+      if (itemId) {
         try {
           toast.info("🔍 Finding potential matches...");
           
+          const functionName = type === "lost" ? "match-items" : "match-found-items";
+          const bodyParam = type === "lost" ? { lostItemId: itemId } : { foundItemId: itemId };
+          
           const { data: matchData, error: matchError } = await supabase.functions.invoke(
-            "match-items",
+            functionName,
             {
-              body: { lostItemId: itemId },
+              body: bodyParam,
             }
           );
 
           if (matchError) {
             console.error("Error finding matches:", matchError);
-          } else if (matchData?.matches) {
+          } else if (matchData?.matches && matchData.matches.length > 0) {
             setMatches(matchData.matches);
             setShowMatches(true);
+            return; // Don't close the modal yet, show matches first
           }
         } catch (error) {
           console.error("Error calling match function:", error);
         }
-      } else {
-        // Reset and close for found items
-        setFormData({
-          title: "",
-          location: "",
-          date: "",
-          contact: "",
-          description: "",
-          isAnonymous: false,
-        });
-        setImageFile(null);
-        onClose();
       }
+      
+      // Reset and close if no matches found
+      setFormData({
+        title: "",
+        location: "",
+        date: "",
+        contact: "",
+        description: "",
+        isAnonymous: false,
+      });
+      setImageFile(null);
+      onClose();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Failed to submit. Please try again.");
@@ -154,7 +158,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
       )}
       
       <Dialog open={isOpen && !showMatches} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-card/95 border border-border/50">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-card/95 border-2 border-border/50 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary">
             Report: I {type === "found" ? "Found" : "Lost"} Something
