@@ -9,7 +9,7 @@ const Index = () => {
   const [modalType, setModalType] = useState<"found" | "lost" | null>(null);
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex items-start sm:items-center justify-center p-4 pb-32 sm:pb-4">
       {/* Background image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -18,7 +18,7 @@ const Index = () => {
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-background/40 backdrop-blur-sm" />
 
-      <div className="container max-w-6xl mx-auto relative z-10">
+      <div className="container max-w-6xl mx-auto relative z-10 mt-8 sm:mt-0">
         {/* Header */}
         <div className="text-center mb-16 animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-4 tracking-tight">
@@ -93,14 +93,14 @@ const Index = () => {
         </div>
 
         {/* Browse links */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-          <Link to="/found">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm bg-background/50 hover:bg-background/70">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in mb-8 sm:mb-0">
+          <Link to="/found" className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full backdrop-blur-sm bg-background/50 hover:bg-background/70">
               Browse Found Items
             </Button>
           </Link>
-          <Link to="/lost">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto backdrop-blur-sm bg-background/50 hover:bg-background/70">
+          <Link to="/lost" className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full backdrop-blur-sm bg-background/50 hover:bg-background/70">
               Browse Lost Items
             </Button>
           </Link>
