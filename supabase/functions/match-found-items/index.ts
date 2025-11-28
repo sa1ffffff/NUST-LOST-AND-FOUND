@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,43 +34,42 @@ interface Match {
   score: number;
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
+// Calculate text similarity using word overlap
+function calculateTextSimilarity(text1: string, text2: string): number {
+  const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 2);
   
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
+  if (words1.length === 0 || words2.length === 0) return 0;
   
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
   
-  if (normA === 0 || normB === 0) return 0;
+  let intersection = 0;
+  set1.forEach(word => {
+    if (set2.has(word)) intersection++;
+  });
   
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  const union = set1.size + set2.size - intersection;
+  return union > 0 ? intersection / union : 0;
 }
 
-async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${lovableApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      input: text,
-      model: "text-embedding-3-small",
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to generate embedding: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.data[0].embedding;
+// Calculate match score between found and lost items
+function calculateMatchScore(foundItem: FoundItem, lostItem: LostItem): number {
+  // Title similarity (weight: 40%)
+  const titleSimilarity = calculateTextSimilarity(foundItem.title, lostItem.title);
+  
+  // Description similarity (weight: 30%)
+  const foundDesc = foundItem.description || "";
+  const lostDesc = lostItem.description || "";
+  const descSimilarity = calculateTextSimilarity(foundDesc, lostDesc);
+  
+  // Location similarity (weight: 30%)
+  const locationSimilarity = calculateTextSimilarity(foundItem.location, lostItem.location);
+  
+  // Weighted average
+  const score = (titleSimilarity * 0.4 + descSimilarity * 0.3 + locationSimilarity * 0.3) * 100;
+  
+  return Math.round(score);
 }
 
 serve(async (req) => {
@@ -112,19 +110,11 @@ serve(async (req) => {
       );
     }
 
-    // Generate embedding for found item
-    const foundText = `${foundItem.title} ${foundItem.description || ""} ${foundItem.location}`;
-    const foundEmbedding = await generateEmbedding(foundText);
-
-    // Generate embeddings for all lost items and calculate similarity
+    // Calculate similarity for all lost items
     const matches: Match[] = [];
 
     for (const lostItem of lostItems) {
-      const lostText = `${lostItem.title} ${lostItem.description || ""} ${lostItem.location}`;
-      const lostEmbedding = await generateEmbedding(lostText);
-      
-      const similarity = cosineSimilarity(foundEmbedding, lostEmbedding);
-      const score = Math.round(similarity * 100);
+      const score = calculateMatchScore(foundItem, lostItem);
 
       matches.push({
         lostItem,
@@ -132,9 +122,9 @@ serve(async (req) => {
       });
     }
 
-    // Sort by score and get top 3
+    // Sort by score and get top 3 with score >= 30
     matches.sort((a, b) => b.score - a.score);
-    const topMatches = matches.slice(0, 3).filter(m => m.score >= 60);
+    const topMatches = matches.slice(0, 3).filter(m => m.score >= 30);
 
     // Store matches in database
     for (const match of topMatches) {
