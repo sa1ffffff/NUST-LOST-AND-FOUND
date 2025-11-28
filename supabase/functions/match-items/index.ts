@@ -28,52 +28,42 @@ interface Match {
   score: number;
 }
 
-// Compute cosine similarity between two vectors
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
+// Calculate text similarity using word overlap
+function calculateTextSimilarity(text1: string, text2: string): number {
+  const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 2);
   
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
+  if (words1.length === 0 || words2.length === 0) return 0;
   
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
   
-  if (normA === 0 || normB === 0) return 0;
+  let intersection = 0;
+  set1.forEach(word => {
+    if (set2.has(word)) intersection++;
+  });
   
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  const union = set1.size + set2.size - intersection;
+  return union > 0 ? intersection / union : 0;
 }
 
-// Generate embeddings using Lovable AI
-async function generateEmbedding(text: string): Promise<number[]> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY is not configured");
-  }
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Embedding API error:", response.status, errorText);
-    throw new Error(`Failed to generate embedding: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.data[0].embedding;
+// Calculate match score between lost and found items
+function calculateMatchScore(lostItem: LostItem, foundItem: FoundItem): number {
+  // Title similarity (weight: 40%)
+  const titleSimilarity = calculateTextSimilarity(lostItem.title, foundItem.title);
+  
+  // Description similarity (weight: 30%)
+  const lostDesc = lostItem.description || "";
+  const foundDesc = foundItem.description || "";
+  const descSimilarity = calculateTextSimilarity(lostDesc, foundDesc);
+  
+  // Location similarity (weight: 30%)
+  const locationSimilarity = calculateTextSimilarity(lostItem.location, foundItem.location);
+  
+  // Weighted average
+  const score = (titleSimilarity * 0.4 + descSimilarity * 0.3 + locationSimilarity * 0.3) * 100;
+  
+  return Math.round(score);
 }
 
 Deno.serve(async (req) => {
@@ -125,21 +115,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create text representations for embedding
-    const lostText = `${lostItem.title} ${lostItem.description || ''} ${lostItem.location}`.toLowerCase();
-    console.log("Generating embedding for lost item...");
-    const lostEmbedding = await generateEmbedding(lostText);
-
     // Calculate similarity scores for all found items
     const matches: Match[] = [];
     
     for (const foundItem of foundItems) {
-      const foundText = `${foundItem.title} ${foundItem.description || ''} ${foundItem.location}`.toLowerCase();
-      console.log(`Generating embedding for found item: ${foundItem.title}`);
-      const foundEmbedding = await generateEmbedding(foundText);
-      
-      const similarity = cosineSimilarity(lostEmbedding, foundEmbedding);
-      const score = Math.round(similarity * 100);
+      const score = calculateMatchScore(lostItem, foundItem);
       
       matches.push({
         foundItem,
@@ -147,9 +127,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Sort by score and take top 3
+    // Sort by score and take top 3 with score >= 30
     matches.sort((a, b) => b.score - a.score);
-    const topMatches = matches.slice(0, 3);
+    const topMatches = matches.slice(0, 3).filter(m => m.score >= 30);
 
     console.log("Top matches:", topMatches.map(m => ({ title: m.foundItem.title, score: m.score })));
 
