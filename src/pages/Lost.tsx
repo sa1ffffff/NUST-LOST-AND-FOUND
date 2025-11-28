@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface LostItem {
   id: string;
@@ -24,8 +25,12 @@ const Lost = () => {
   const [filteredItems, setFilteredItems] = useState<LostItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check admin status
+    const adminStatus = localStorage.getItem("isAdmin") === "true";
+    setIsAdmin(adminStatus);
     fetchLostItems();
   }, []);
 
@@ -61,6 +66,30 @@ const Lost = () => {
     );
     setFilteredItems(filtered);
   }, [searchQuery, items]);
+
+  const handleDelete = async (itemId: string) => {
+    if (!confirm("Are you sure you want to delete this lost item?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("lost_items")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) throw error;
+
+      // Update local state
+      setItems(items.filter(item => item.id !== itemId));
+      setFilteredItems(filteredItems.filter(item => item.id !== itemId));
+      
+      toast.success("Lost item deleted successfully");
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast.error("Failed to delete item");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -111,7 +140,19 @@ const Lost = () => {
                   </div>
                 )}
                 <div className="p-6">
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{item.title}</h3>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   {item.description && (
                     <p className="text-muted-foreground mb-4 line-clamp-3">{item.description}</p>
                   )}
