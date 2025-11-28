@@ -66,9 +66,17 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
+          status: "pending",
         }).select();
-        if (error) throw error;
-        itemId = data?.[0]?.id;
+        
+        if (error) {
+          console.error("Error inserting found item:", error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          itemId = data[0].id;
+        }
       } else {
         const { data, error } = await supabase.from("lost_items").insert({
           title: formData.title,
@@ -78,9 +86,16 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
-        }).select().single();
-        if (error) throw error;
-        itemId = data.id;
+        }).select();
+        
+        if (error) {
+          console.error("Error inserting lost item:", error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          itemId = data[0].id;
+        }
       }
 
       toast.success(`${type === "found" ? "Found" : "Lost"} item reported successfully!`);
