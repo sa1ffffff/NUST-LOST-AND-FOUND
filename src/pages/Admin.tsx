@@ -217,12 +217,16 @@ const Admin = () => {
                       </Button>
                     </div>
                     <Button
-                      onClick={() => notifyMatches(item.id)}
+                      onClick={async () => {
+                        await updateItemStatus(item.id, "approved");
+                        await notifyMatches(item.id);
+                      }}
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-accent text-accent hover:bg-accent hover:text-accent-foreground"
                     >
+                      <Check className="mr-2 h-4 w-4" />
                       <Mail className="mr-2 h-4 w-4" />
-                      Notify Matches
+                      Approve & Notify Matches
                     </Button>
                   </div>
                 </div>
