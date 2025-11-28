@@ -85,6 +85,10 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
 
       toast.success(`${type === "found" ? "Found" : "Lost"} item reported successfully!`);
       
+      if (type === "found") {
+        toast.info("Your item is pending admin approval and will be visible once approved.");
+      }
+      
       // For lost items, trigger AI matching
       if (type === "lost" && itemId) {
         try {
