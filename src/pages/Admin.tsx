@@ -33,32 +33,16 @@ const Admin = () => {
 
   const checkAdminStatus = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Check localStorage for admin session
+      const isAdminSession = localStorage.getItem("isAdmin") === "true";
       
-      if (!user) {
+      if (!isAdminSession) {
         toast({
           title: "Access Denied",
           description: "Please log in to access this page",
           variant: "destructive",
         });
-        navigate("/");
-        return;
-      }
-
-      const { data: roleData, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
-
-      if (error || !roleData) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page",
-          variant: "destructive",
-        });
-        navigate("/");
+        navigate("/auth");
         return;
       }
 
@@ -66,7 +50,7 @@ const Admin = () => {
       fetchPendingItems();
     } catch (error) {
       console.error("Error checking admin status:", error);
-      navigate("/");
+      navigate("/auth");
     }
   };
 
