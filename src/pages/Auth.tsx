@@ -12,7 +12,6 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,40 +20,27 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
+      // Hardcoded admin credentials
+      const ADMIN_EMAIL = "admin@nustlostfound.com";
+      const ADMIN_PASSWORD = "123456788";
 
-        if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Account created! Please check your email to verify.",
-        });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        // Set admin session in localStorage
+        localStorage.setItem("isAdmin", "true");
+        
         toast({
           title: "Success",
           description: "Logged in successfully",
         });
 
         navigate("/admin");
+      } else {
+        throw new Error("Invalid credentials");
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Invalid email or password",
         variant: "destructive",
       });
     } finally {
@@ -74,12 +60,10 @@ const Auth = () => {
         
         <Card className="p-8 backdrop-blur-sm bg-card/50 border-border/50">
           <h1 className="text-3xl font-bold text-primary mb-2">
-            {isSignUp ? "Create Account" : "Admin Login"}
+            Admin Login
           </h1>
           <p className="text-muted-foreground mb-6">
-            {isSignUp
-              ? "Sign up to manage the platform"
-              : "Sign in to access the admin panel"}
+            Sign in to access the admin panel
           </p>
 
           <form onSubmit={handleAuth} className="space-y-4">
@@ -112,29 +96,10 @@ const Auth = () => {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Processing..." : isSignUp ? "Sign Up" : "Login"}
+              {loading ? "Processing..." : "Login"}
             </Button>
           </form>
-
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-primary hover:underline"
-            >
-              {isSignUp
-                ? "Already have an account? Login"
-                : "Need an account? Sign up"}
-            </button>
-          </div>
         </Card>
-
-        {!isSignUp && (
-          <div className="mt-4 p-4 bg-muted/50 rounded-lg backdrop-blur-sm">
-            <p className="text-sm text-muted-foreground">
-              <strong>Note:</strong> After creating an account, contact the system administrator to grant admin access.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
