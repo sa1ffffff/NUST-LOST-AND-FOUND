@@ -66,9 +66,9 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
-        }).select().single();
+        }).select();
         if (error) throw error;
-        itemId = data.id;
+        itemId = data?.[0]?.id;
       } else {
         const { data, error } = await supabase.from("lost_items").insert({
           title: formData.title,
