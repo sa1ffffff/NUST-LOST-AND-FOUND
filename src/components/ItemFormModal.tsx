@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import MatchResults from "@/components/MatchResults";
 
 interface ItemFormModalProps {
   isOpen: boolean;
@@ -26,8 +25,6 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
     isAnonymous: false,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [matches, setMatches] = useState<any[] | null>(null);
-  const [showMatches, setShowMatches] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +53,6 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
       }
 
       // Insert into appropriate table
-      let itemId = null;
       if (type === "found") {
         const { data, error } = await supabase.from("found_items").insert({
           title: formData.title,
@@ -73,10 +69,6 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           console.error("Error inserting found item:", error);
           throw error;
         }
-        
-        if (data && data.length > 0) {
-          itemId = data[0].id;
-        }
       } else {
         const { data, error } = await supabase.from("lost_items").insert({
           title: formData.title,
@@ -92,10 +84,6 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           console.error("Error inserting lost item:", error);
           throw error;
         }
-        
-        if (data && data.length > 0) {
-          itemId = data[0].id;
-        }
       }
 
       toast.success(`${type === "found" ? "Found" : "Lost"} item reported successfully!`);
@@ -104,34 +92,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
         toast.info("Your item is pending admin approval and will be visible once approved.");
       }
       
-      // Trigger AI matching for both lost and found items
-      if (itemId) {
-        try {
-          toast.info("🔍 Finding potential matches...");
-          
-          const functionName = type === "lost" ? "match-items" : "match-found-items";
-          const bodyParam = type === "lost" ? { lostItemId: itemId } : { foundItemId: itemId };
-          
-          const { data: matchData, error: matchError } = await supabase.functions.invoke(
-            functionName,
-            {
-              body: bodyParam,
-            }
-          );
-
-          if (matchError) {
-            console.error("Error finding matches:", matchError);
-          } else if (matchData?.matches && matchData.matches.length > 0) {
-            setMatches(matchData.matches);
-            setShowMatches(true);
-            return; // Don't close the modal yet, show matches first
-          }
-        } catch (error) {
-          console.error("Error calling match function:", error);
-        }
-      }
-      
-      // Reset and close if no matches found
+      // Reset and close
       setFormData({
         title: "",
         location: "",
@@ -150,29 +111,8 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
     }
   };
 
-  const handleCloseMatches = () => {
-    setShowMatches(false);
-    setMatches(null);
-    // Reset form
-    setFormData({
-      title: "",
-      location: "",
-      date: "",
-      contact: "",
-      description: "",
-      isAnonymous: false,
-    });
-    setImageFile(null);
-    onClose();
-  };
-
   return (
-    <>
-      {showMatches && matches && (
-        <MatchResults matches={matches} onClose={handleCloseMatches} />
-      )}
-      
-      <Dialog open={isOpen && !showMatches} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto backdrop-blur-xl bg-card/95 border-2 border-border/50 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary">
@@ -282,7 +222,6 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
         </form>
       </DialogContent>
     </Dialog>
-    </>
   );
 };
 
