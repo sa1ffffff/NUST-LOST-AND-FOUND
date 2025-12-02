@@ -104,6 +104,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_anonymous: boolean | null
+          is_found: boolean | null
           location: string
           title: string
         }
@@ -115,6 +116,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_anonymous?: boolean | null
+          is_found?: boolean | null
           location: string
           title: string
         }
@@ -126,6 +128,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_anonymous?: boolean | null
+          is_found?: boolean | null
           location?: string
           title?: string
         }
