@@ -3,10 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Search, Trash2, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface LostItem {
   id: string;
@@ -17,6 +28,7 @@ interface LostItem {
   contact: string | null;
   image_url: string | null;
   is_anonymous: boolean;
+  is_found: boolean;
   created_at: string;
 }
 
@@ -26,12 +38,34 @@ const Lost = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedItemForFound, setSelectedItemForFound] = useState<LostItem | null>(null);
+  const [markingAsFound, setMarkingAsFound] = useState(false);
 
   useEffect(() => {
-    // Check admin status
     const adminStatus = localStorage.getItem("isAdmin") === "true";
     setIsAdmin(adminStatus);
     fetchLostItems();
+
+    // Set up realtime subscription
+    const channel = supabase
+      .channel('lost_items_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lost_items'
+        },
+        () => {
+          fetchLostItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchLostItems = async () => {
@@ -42,7 +76,10 @@ const Lost = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const lostItems = data || [];
+      const lostItems = (data || []).map(item => ({
+        ...item,
+        is_found: item.is_found || false
+      }));
       setItems(lostItems);
       setFilteredItems(lostItems);
     } catch (error) {
@@ -80,7 +117,6 @@ const Lost = () => {
 
       if (error) throw error;
 
-      // Update local state
       setItems(items.filter(item => item.id !== itemId));
       setFilteredItems(filteredItems.filter(item => item.id !== itemId));
       
@@ -88,6 +124,68 @@ const Lost = () => {
     } catch (error) {
       console.error("Error deleting item:", error);
       toast.error("Failed to delete item");
+    }
+  };
+
+  const handleMarkAsFoundClick = (item: LostItem) => {
+    setSelectedItemForFound(item);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmFound = async () => {
+    if (!selectedItemForFound) return;
+
+    setMarkingAsFound(true);
+    try {
+      // Update the item as found
+      const { error: updateError } = await supabase
+        .from("lost_items")
+        .update({ is_found: true })
+        .eq("id", selectedItemForFound.id);
+
+      if (updateError) throw updateError;
+
+      // Send email notification if contact exists and is an email
+      if (selectedItemForFound.contact && selectedItemForFound.contact.includes("@")) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke("send-found-notification", {
+            body: {
+              email: selectedItemForFound.contact,
+              itemName: selectedItemForFound.title,
+              itemDescription: selectedItemForFound.description || ""
+            }
+          });
+
+          if (emailError) {
+            console.error("Email error:", emailError);
+          } else {
+            toast.success("Owner has been notified via email!");
+          }
+        } catch (emailErr) {
+          console.error("Failed to send email:", emailErr);
+        }
+      }
+
+      // Update local state
+      const updatedItems = items.map(item => 
+        item.id === selectedItemForFound.id ? { ...item, is_found: true } : item
+      );
+      setItems(updatedItems);
+      setFilteredItems(updatedItems.filter(item => 
+        !searchQuery.trim() || 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location.toLowerCase().includes(searchQuery.toLowerCase())
+      ));
+
+      toast.success("Item marked as found!");
+    } catch (error) {
+      console.error("Error marking item as found:", error);
+      toast.error("Failed to mark item as found");
+    } finally {
+      setMarkingAsFound(false);
+      setConfirmDialogOpen(false);
+      setSelectedItemForFound(null);
     }
   };
 
@@ -129,19 +227,32 @@ const Lost = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
-              <Card key={item.id} className="overflow-hidden backdrop-blur-sm bg-card/50 border-border/50 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <Card 
+                key={item.id} 
+                className={`overflow-hidden backdrop-blur-sm bg-card/50 border-border/50 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${item.is_found ? 'opacity-70 border-green-500/50' : ''}`}
+              >
                 {item.image_url && (
-                  <div className="aspect-video overflow-hidden bg-muted">
+                  <div className="aspect-video overflow-hidden bg-muted relative">
                     <img
                       src={item.image_url}
                       alt={item.title}
                       className="w-full h-full object-cover"
                     />
+                    {item.is_found && (
+                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                        <span className="bg-green-500 text-white px-4 py-2 rounded-full font-semibold">FOUND</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                      {item.is_found && (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      )}
+                    </div>
                     {isAdmin && (
                       <Button
                         variant="ghost"
@@ -173,12 +284,57 @@ const Lost = () => {
                       <p className="text-muted-foreground italic">Anonymous submission</p>
                     )}
                   </div>
+
+                  {/* Mark as Found checkbox */}
+                  {!item.is_found && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <div 
+                        className="flex items-center space-x-2 cursor-pointer"
+                        onClick={() => handleMarkAsFoundClick(item)}
+                      >
+                        <Checkbox id={`found-${item.id}`} checked={false} />
+                        <label 
+                          htmlFor={`found-${item.id}`} 
+                          className="text-sm font-medium leading-none cursor-pointer text-green-600 hover:text-green-700"
+                        >
+                          Mark as Found
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Item Found</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you found the right item "{selectedItemForFound?.title}"? 
+              {selectedItemForFound?.contact && selectedItemForFound.contact.includes("@") && (
+                <span className="block mt-2 text-green-600">
+                  An email notification will be sent to the owner.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={markingAsFound}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmFound}
+              disabled={markingAsFound}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {markingAsFound ? "Processing..." : "Yes, Item Found"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
