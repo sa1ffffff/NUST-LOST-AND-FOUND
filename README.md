@@ -1,5 +1,5 @@
-🔍 NUST Finder – Centralized Lost & Found Platform
-NUST Finder is a full-stack web application designed to solve the problem of scattered lost & found reports across campus. It provides a centralized, searchable, and secure platform for students to report lost items and reunite with their belongings efficiently.
+🔍 NUST LOST AND FOUND – Centralized Lost & Found Platform
+NUST LOST AND FOUND is a full-stack web application designed to solve the problem of scattered lost & found reports across campus. It provides a centralized, searchable, and secure platform for students to report lost items and reunite with their belongings efficiently.
 
 🚀 The Problem & Solution
 Previously, lost items were reported in chaotic WhatsApp groups or Facebook pages, making retrieval difficult. I built this solution to offer:
@@ -62,8 +62,8 @@ Clone the repo
 
 Bash
 
-git clone https://github.com/your-username/nust-finder.git
-cd nust-finder
+git clone [https://github.com/your-username/nust-LOST-AND-FOUND.git](https://github.com/sa1ffffff/NUST-LOST-AND-FOUND)
+cd nust-lost-and-found
 Install Dependencies
 
 Bash
