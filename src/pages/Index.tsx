@@ -24,7 +24,7 @@ const Index = () => {
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-4 tracking-tight">
             NUST Lost & Found
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-black max-w-2xl mx-auto">
             A community-driven platform to reunite people with their belongings
           </p>
         </div>
