@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Search, Trash2, CheckCircle } from "lucide-react";
+import { ArrowLeft, Search, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -38,14 +38,11 @@ const Lost = () => {
   const [filteredItems, setFilteredItems] = useState<LostItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedItemForFound, setSelectedItemForFound] = useState<LostItem | null>(null);
   const [markingAsFound, setMarkingAsFound] = useState(false);
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem("isAdmin") === "true";
-    setIsAdmin(adminStatus);
     fetchLostItems();
 
     // Set up realtime subscription
@@ -113,29 +110,6 @@ const Lost = () => {
     );
     setFilteredItems(filtered);
   }, [searchQuery, items]);
-
-  const handleDelete = async (itemId: string) => {
-    if (!confirm("Are you sure you want to delete this lost item?")) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("lost_items")
-        .delete()
-        .eq("id", itemId);
-
-      if (error) throw error;
-
-      setItems(items.filter(item => item.id !== itemId));
-      setFilteredItems(filteredItems.filter(item => item.id !== itemId));
-      
-      toast.success("Lost item deleted successfully");
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      toast.error("Failed to delete item");
-    }
-  };
 
   const handleMarkAsFoundClick = (item: LostItem) => {
     setSelectedItemForFound(item);
@@ -256,22 +230,10 @@ const Lost = () => {
                   </div>
                 )}
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
-                      {item.is_found && (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      )}
-                    </div>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(item.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                    {item.is_found && (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
                     )}
                   </div>
                   {item.description && (
