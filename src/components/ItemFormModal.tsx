@@ -78,6 +78,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
           description: formData.description,
           image_url: imageUrl,
           is_anonymous: formData.isAnonymous,
+          status: "pending",
         }).select();
         
         if (error) {
@@ -87,10 +88,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
       }
 
       toast.success(`${type === "found" ? "Found" : "Lost"} item reported successfully!`);
-      
-      if (type === "found") {
-        toast.info("Your item is pending admin approval and will be visible once approved.");
-      }
+      toast.info("Your item is pending admin approval and will be visible once approved.");
       
       // Reset and close
       setFormData({

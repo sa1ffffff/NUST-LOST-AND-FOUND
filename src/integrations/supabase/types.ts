@@ -106,6 +106,7 @@ export type Database = {
           is_anonymous: boolean | null
           is_found: boolean | null
           location: string
+          status: string | null
           title: string
         }
         Insert: {
@@ -118,6 +119,7 @@ export type Database = {
           is_anonymous?: boolean | null
           is_found?: boolean | null
           location: string
+          status?: string | null
           title: string
         }
         Update: {
@@ -130,6 +132,7 @@ export type Database = {
           is_anonymous?: boolean | null
           is_found?: boolean | null
           location?: string
+          status?: string | null
           title?: string
         }
         Relationships: []
