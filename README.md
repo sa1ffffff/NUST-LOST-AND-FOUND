@@ -1,73 +1,85 @@
-# Welcome to your Lovable project
+🔍 NUST Finder – Centralized Lost & Found Platform
+NUST Finder is a full-stack web application designed to solve the problem of scattered lost & found reports across campus. It provides a centralized, searchable, and secure platform for students to report lost items and reunite with their belongings efficiently.
 
-## Project info
+🚀 The Problem & Solution
+Previously, lost items were reported in chaotic WhatsApp groups or Facebook pages, making retrieval difficult. I built this solution to offer:
 
-**URL**: https://lovable.dev/projects/25075de3-743e-4d6c-b935-bf7e3b8871e8
+Structured Reporting: Dedicated forms for Lost vs. Found items.
 
-## How can I edit this code?
+Visual Verification: Image uploads to verify item ownership.
 
-There are several ways of editing your application.
+Instant Notification: Automated email alerts when an item is marked as found.
 
-**Use Lovable**
+🛠️ Tech Stack
+Frontend:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/25075de3-743e-4d6c-b935-bf7e3b8871e8) and start prompting.
+React (Vite): For a fast, responsive Single Page Application (SPA).
 
-Changes made via Lovable will be committed automatically to this repo.
+TypeScript: For type safety and robust code architecture.
 
-**Use your preferred IDE**
+Tailwind CSS: For modern, responsive styling.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Shadcn/UI: For accessible, pre-built component patterns.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Backend & Database:
 
-Follow these steps:
+Supabase (PostgreSQL): Used as the primary database and backend-as-a-service.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Supabase Storage: Securely handles user-uploaded images for lost items.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Row Level Security (RLS): Implemented strict database policies to manage public access vs. admin privileges.
 
-# Step 3: Install the necessary dependencies.
-npm i
+Integrations:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+EmailJS: Custom API integration to handle transactional emails without a backend server, ensuring owners are notified immediately when their item is found.
+
+✨ Key Features
+1. 🔒 Secure Data Handling (RLS)
+Unlike simple CRUD apps, this project uses Row Level Security policies in PostgreSQL.
+
+Public users can insert reports but cannot modify others' data.
+
+Specific "Update" policies were written to allow the "Mark as Found" feature to function securely without exposing the entire database.
+
+2. 📧 Automated Email Notification System
+I engineered a direct integration with EmailJS to close the loop on lost items.
+
+When a user clicks "Mark as Found," the app triggers an API call.
+
+The system dynamically pulls the owner's contact info and sends a templated email with the item details and description.
+
+3. ⚡ Real-Time & Reactive UI
+Optimistic UI Updates: The interface updates instantly when an item is marked found, providing immediate feedback while the database processes in the background.
+
+Smart Search: Real-time filtering by location, title, or description.
+
+📸 Snapshots
+<img width="796" height="570" alt="image" src="https://github.com/user-attachments/assets/36802723-086c-491f-ad5d-34e68ded9851" />
+
+
+💿 How to Run Locally
+Clone the repo
+
+Bash
+
+git clone https://github.com/your-username/nust-finder.git
+cd nust-finder
+Install Dependencies
+
+Bash
+
+npm install
+Configure Environment Create a .env file and add your Supabase & EmailJS keys:
+
+Code snippet
+
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
+VITE_EMAILJS_PUBLIC_KEY=your_emailjs_key
+VITE_EMAILJS_SERVICE_ID=your_service_id
+VITE_EMAILJS_TEMPLATE_ID=your_template_id
+Run the Server
+
+Bash
+
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/25075de3-743e-4d6c-b935-bf7e3b8871e8) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
