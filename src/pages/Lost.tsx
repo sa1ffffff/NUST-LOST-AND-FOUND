@@ -116,12 +116,13 @@ const Lost = () => {
     setConfirmDialogOpen(true);
   };
 
+  // --- UPDATED FUNCTION FOR EMAILJS ---
   const handleConfirmFound = async () => {
     if (!selectedItemForFound) return;
 
     setMarkingAsFound(true);
     try {
-      // Update the item as found
+      // 1. Update the database item as "found"
       const { error: updateError } = await supabase
         .from("lost_items")
         .update({ is_found: true })
@@ -129,28 +130,41 @@ const Lost = () => {
 
       if (updateError) throw updateError;
 
-      // Send email notification if contact exists and is an email
+      // 2. Send the Email Notification (Using EmailJS API directly)
       if (selectedItemForFound.contact && selectedItemForFound.contact.includes("@")) {
         try {
-          const { error: emailError } = await supabase.functions.invoke("send-found-notification", {
-            body: {
-              email: selectedItemForFound.contact,
-              itemName: selectedItemForFound.title,
-              itemDescription: selectedItemForFound.description || ""
-            }
+          console.log("Attempting to send email via EmailJS...");
+
+          const emailResponse = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+              template_id: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+              user_id: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+              template_params: {
+                to_email: selectedItemForFound.contact,
+                title: selectedItemForFound.title,
+                description: selectedItemForFound.description || "No description provided"
+              },
+            }),
           });
 
-          if (emailError) {
-            console.error("Email error:", emailError);
-          } else {
+          if (emailResponse.ok) {
             toast.success("Owner has been notified via email!");
+          } else {
+            const errorText = await emailResponse.text();
+            console.error("EmailJS Error:", errorText);
+            toast.warning(`Item marked found, but email failed: ${errorText}`);
           }
         } catch (emailErr) {
-          console.error("Failed to send email:", emailErr);
+          console.error("Failed to connect to EmailJS:", emailErr);
         }
       }
 
-      // Update local state
+      // 3. Update local state instantly
       const updatedItems = items.map(item => 
         item.id === selectedItemForFound.id ? { ...item, is_found: true } : item
       );
