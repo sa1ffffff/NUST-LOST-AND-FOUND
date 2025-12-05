@@ -29,6 +29,7 @@ interface LostItem {
   image_url: string | null;
   is_anonymous: boolean;
   is_found: boolean;
+  status: string;
   created_at: string;
 }
 
@@ -70,15 +71,24 @@ const Lost = () => {
 
   const fetchLostItems = async () => {
     try {
-      const { data, error } = await supabase
+      const adminStatus = localStorage.getItem("isAdmin") === "true";
+      let query = supabase
         .from("lost_items")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      // Only show approved items for non-admins
+      if (!adminStatus) {
+        query = query.eq("status", "approved");
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       const lostItems = (data || []).map(item => ({
         ...item,
-        is_found: item.is_found || false
+        is_found: item.is_found || false,
+        status: item.status || "approved"
       }));
       setItems(lostItems);
       setFilteredItems(lostItems);

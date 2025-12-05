@@ -31,13 +31,15 @@ interface LostItem {
   image_url: string | null;
   is_anonymous: boolean;
   is_found: boolean;
+  status: string;
   created_at: string;
 }
 
 const Admin = () => {
-  const [pendingItems, setPendingItems] = useState<FoundItem[]>([]);
+  const [pendingFoundItems, setPendingFoundItems] = useState<FoundItem[]>([]);
   const [approvedFoundItems, setApprovedFoundItems] = useState<FoundItem[]>([]);
-  const [lostItems, setLostItems] = useState<LostItem[]>([]);
+  const [pendingLostItems, setPendingLostItems] = useState<LostItem[]>([]);
+  const [approvedLostItems, setApprovedLostItems] = useState<LostItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
@@ -101,33 +103,44 @@ const Admin = () => {
     setLoading(true);
     try {
       // Fetch pending found items
-      const { data: pending, error: pendingError } = await supabase
+      const { data: pendingFound, error: pendingFoundError } = await supabase
         .from("found_items")
         .select("*")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (pendingError) throw pendingError;
-      setPendingItems(pending || []);
+      if (pendingFoundError) throw pendingFoundError;
+      setPendingFoundItems(pendingFound || []);
 
       // Fetch approved found items
-      const { data: approved, error: approvedError } = await supabase
+      const { data: approvedFound, error: approvedFoundError } = await supabase
         .from("found_items")
         .select("*")
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
-      if (approvedError) throw approvedError;
-      setApprovedFoundItems(approved || []);
+      if (approvedFoundError) throw approvedFoundError;
+      setApprovedFoundItems(approvedFound || []);
 
-      // Fetch all lost items
-      const { data: lost, error: lostError } = await supabase
+      // Fetch pending lost items
+      const { data: pendingLost, error: pendingLostError } = await supabase
         .from("lost_items")
         .select("*")
+        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      if (lostError) throw lostError;
-      setLostItems((lost || []).map(item => ({ ...item, is_found: item.is_found || false })));
+      if (pendingLostError) throw pendingLostError;
+      setPendingLostItems((pendingLost || []).map(item => ({ ...item, is_found: item.is_found || false, status: item.status || "pending" })));
+
+      // Fetch approved lost items
+      const { data: approvedLost, error: approvedLostError } = await supabase
+        .from("lost_items")
+        .select("*")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+      if (approvedLostError) throw approvedLostError;
+      setApprovedLostItems((approvedLost || []).map(item => ({ ...item, is_found: item.is_found || false, status: item.status || "approved" })));
 
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -152,14 +165,42 @@ const Admin = () => {
 
       toast({
         title: "Success",
-        description: `Item ${status} successfully`,
+        description: `Found item ${status} successfully`,
       });
 
-      // Update local state
-      const item = pendingItems.find(i => i.id === itemId);
-      setPendingItems(pendingItems.filter(i => i.id !== itemId));
+      const item = pendingFoundItems.find(i => i.id === itemId);
+      setPendingFoundItems(pendingFoundItems.filter(i => i.id !== itemId));
       if (status === "approved" && item) {
         setApprovedFoundItems([{ ...item, status: "approved" }, ...approvedFoundItems]);
+      }
+    } catch (error) {
+      console.error("Error updating item status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update item status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateLostItemStatus = async (itemId: string, status: "approved" | "rejected") => {
+    try {
+      const { error } = await supabase
+        .from("lost_items")
+        .update({ status })
+        .eq("id", itemId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Lost item ${status} successfully`,
+      });
+
+      const item = pendingLostItems.find(i => i.id === itemId);
+      setPendingLostItems(pendingLostItems.filter(i => i.id !== itemId));
+      if (status === "approved" && item) {
+        setApprovedLostItems([{ ...item, status: "approved" }, ...approvedLostItems]);
       }
     } catch (error) {
       console.error("Error updating item status:", error);
@@ -184,7 +225,7 @@ const Admin = () => {
 
       toast({ title: "Success", description: "Item deleted successfully" });
       setApprovedFoundItems(approvedFoundItems.filter(i => i.id !== itemId));
-      setPendingItems(pendingItems.filter(i => i.id !== itemId));
+      setPendingFoundItems(pendingFoundItems.filter(i => i.id !== itemId));
     } catch (error) {
       console.error("Error deleting item:", error);
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
@@ -203,7 +244,8 @@ const Admin = () => {
       if (error) throw error;
 
       toast({ title: "Success", description: "Item deleted successfully" });
-      setLostItems(lostItems.filter(i => i.id !== itemId));
+      setApprovedLostItems(approvedLostItems.filter(i => i.id !== itemId));
+      setPendingLostItems(pendingLostItems.filter(i => i.id !== itemId));
     } catch (error) {
       console.error("Error deleting item:", error);
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
@@ -213,6 +255,8 @@ const Admin = () => {
   if (!isAdmin) {
     return null;
   }
+
+  const totalPending = pendingFoundItems.length + pendingLostItems.length;
 
   const renderFoundItemCard = (item: FoundItem, showActions: "pending" | "approved") => (
     <Card key={item.id} className="overflow-hidden backdrop-blur-sm bg-card/50 border-border/50">
@@ -270,7 +314,7 @@ const Admin = () => {
     </Card>
   );
 
-  const renderLostItemCard = (item: LostItem) => (
+  const renderLostItemCard = (item: LostItem, showActions: "pending" | "approved") => (
     <Card 
       key={item.id} 
       className={`overflow-hidden backdrop-blur-sm bg-card/50 border-border/50 ${item.is_found ? 'border-green-500/50' : ''}`}
@@ -309,13 +353,32 @@ const Admin = () => {
           )}
         </div>
         
-        <Button
-          onClick={() => deleteLostItem(item.id)}
-          variant="destructive"
-          className="w-full"
-        >
-          <Trash2 className="mr-2 h-4 w-4" /> Delete
-        </Button>
+        {showActions === "pending" ? (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => updateLostItemStatus(item.id, "approved")}
+              className="flex-1"
+              variant="default"
+            >
+              <Check className="mr-2 h-4 w-4" /> Approve
+            </Button>
+            <Button
+              onClick={() => updateLostItemStatus(item.id, "rejected")}
+              className="flex-1"
+              variant="destructive"
+            >
+              <X className="mr-2 h-4 w-4" /> Reject
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={() => deleteLostItem(item.id)}
+            variant="destructive"
+            className="w-full"
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </Button>
+        )}
       </div>
     </Card>
   );
@@ -339,27 +402,43 @@ const Admin = () => {
           </div>
         ) : (
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
               <TabsTrigger value="pending" className="relative">
-                Pending Requests
-                {pendingItems.length > 0 && (
+                Pending
+                {totalPending > 0 && (
                   <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {pendingItems.length}
+                    {totalPending}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="found">Found Items ({approvedFoundItems.length})</TabsTrigger>
-              <TabsTrigger value="lost">Lost Items ({lostItems.length})</TabsTrigger>
+              <TabsTrigger value="found">Found ({approvedFoundItems.length})</TabsTrigger>
+              <TabsTrigger value="lost">Lost ({approvedLostItems.length})</TabsTrigger>
+              <TabsTrigger value="all">All Items</TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending">
-              {pendingItems.length === 0 ? (
+              {totalPending === 0 ? (
                 <Card className="p-12 text-center backdrop-blur-sm bg-card/50">
                   <p className="text-muted-foreground">No pending items to review</p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {pendingItems.map((item) => renderFoundItemCard(item, "pending"))}
+                <div className="space-y-8">
+                  {pendingFoundItems.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Pending Found Items ({pendingFoundItems.length})</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {pendingFoundItems.map((item) => renderFoundItemCard(item, "pending"))}
+                      </div>
+                    </div>
+                  )}
+                  {pendingLostItems.length > 0 && (
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 text-foreground">Pending Lost Items ({pendingLostItems.length})</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {pendingLostItems.map((item) => renderLostItemCard(item, "pending"))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -377,15 +456,48 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="lost">
-              {lostItems.length === 0 ? (
+              {approvedLostItems.length === 0 ? (
                 <Card className="p-12 text-center backdrop-blur-sm bg-card/50">
-                  <p className="text-muted-foreground">No lost items</p>
+                  <p className="text-muted-foreground">No approved lost items</p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {lostItems.map((item) => renderLostItemCard(item))}
+                  {approvedLostItems.map((item) => renderLostItemCard(item, "approved"))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="all">
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 text-foreground">All Found Items ({approvedFoundItems.length + pendingFoundItems.length})</h2>
+                  {approvedFoundItems.length + pendingFoundItems.length === 0 ? (
+                    <Card className="p-8 text-center backdrop-blur-sm bg-card/50">
+                      <p className="text-muted-foreground">No found items</p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...pendingFoundItems, ...approvedFoundItems].map((item) => 
+                        renderFoundItemCard(item, item.status === "pending" ? "pending" : "approved")
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 text-foreground">All Lost Items ({approvedLostItems.length + pendingLostItems.length})</h2>
+                  {approvedLostItems.length + pendingLostItems.length === 0 ? (
+                    <Card className="p-8 text-center backdrop-blur-sm bg-card/50">
+                      <p className="text-muted-foreground">No lost items</p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...pendingLostItems, ...approvedLostItems].map((item) => 
+                        renderLostItemCard(item, item.status === "pending" ? "pending" : "approved")
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         )}
