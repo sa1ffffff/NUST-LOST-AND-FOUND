@@ -151,6 +151,7 @@ const ItemFormModal = ({ isOpen, onClose, type }: ItemFormModalProps) => {
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
+              max={new Date().toISOString().split("T")[0]}
               className="bg-background/50"
             />
           </div>
