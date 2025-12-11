@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Analytics } from "@vercel/analytics/react"; // <--- ADDED IMPORT
+import { Analytics } from "@vercel/analytics/react";
+import WelcomeModal from "@/components/WelcomeModal"; // <--- 1. IMPORT THIS
 import Index from "./pages/Index";
 import Found from "./pages/Found";
 import Lost from "./pages/Lost";
@@ -30,7 +31,8 @@ const App = () => (
         </Routes>
       </BrowserRouter>
       
-      <Analytics /> {/* <--- ADDED COMPONENT HERE */}
+      <WelcomeModal /> {/* <--- 2. ADD COMPONENT HERE */}
+      <Analytics />
       
     </TooltipProvider>
   </QueryClientProvider>
